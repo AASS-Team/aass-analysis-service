@@ -1,6 +1,6 @@
 # [AASS] Analysis Service
 
-![master pipeline](https://github.com/AASS-Team/aass-lab-service/workflows/pipeline/badge.svg?branch=master)
+![master pipeline](https://github.com/AASS-Team/aass-analysis-service/workflows/pipeline/badge.svg?branch=master)
 
 ## Prerequisites
 
