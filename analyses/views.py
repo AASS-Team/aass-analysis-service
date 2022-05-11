@@ -1,3 +1,4 @@
+from datetime import datetime
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
@@ -31,7 +32,7 @@ class AnalysesList(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer.save()
+        serializer.save(status=Analysis.Status.PENDING)
         return Response(
             data=serializer.data,
             status=status.HTTP_201_CREATED,
@@ -40,8 +41,10 @@ class AnalysesList(APIView):
 
 class AnalysisDetail(APIView):
     """
-    Retrieve, update or delete a analysis instance.
+    Retrieve, update or delete an analysis instance.
     """
+
+    serializer_class = serializers.AnalysisSerializer
 
     def get_object(self, id):
         try:
@@ -51,12 +54,12 @@ class AnalysisDetail(APIView):
 
     def get(self, request, id, format=None):
         analysis = self.get_object(id)
-        serializer = serializers.AnalysisSerializer(analysis)
+        serializer = self.serializer_class(analysis)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, id, format=None):
         analysis = self.get_object(id)
-        serializer = serializers.AnalysisSerializer(analysis, data=request.data)
+        serializer = self.serializer_class(analysis, data=request.data)
 
         if not serializer.is_valid():
             return Response(
@@ -82,3 +85,61 @@ class AnalysisDetail(APIView):
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AnalysisStart(APIView):
+    """
+    Analysis start
+    """
+
+    serializer_class = serializers.AnalysisSerializer
+
+    def get_object(self, id):
+        try:
+            return Analysis.objects.get(pk=id)
+        except Analysis.DoesNotExist:
+            raise NotFound()
+
+    def post(self, request, id, format=None):
+        analysis = self.get_object(id)
+        serializer = self.serializer_class(analysis, data=request.data, partial=True)
+
+        if not serializer.is_valid():
+            return Response(
+                data={
+                    "errors": {"global": "Nepodarilo sa aktualizovať stav analýzy."},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer.save(status=Analysis.Status.IN_PROGRESS, started_at=datetime.now())
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class AnalysisFinish(APIView):
+    """
+    Analysis finish
+    """
+
+    serializer_class = serializers.AnalysisSerializer
+
+    def get_object(self, id):
+        try:
+            return Analysis.objects.get(pk=id)
+        except Analysis.DoesNotExist:
+            raise NotFound()
+
+    def post(self, request, id, format=None):
+        analysis = self.get_object(id)
+        serializer = self.serializer_class(analysis, data=request.data, partial=True)
+
+        if not serializer.is_valid():
+            return Response(
+                data={
+                    "errors": {"global": "Nepodarilo sa aktualizovať stav analýzy."},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer.save(status=Analysis.Status.FINISHED, ended_at=datetime.now())
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
